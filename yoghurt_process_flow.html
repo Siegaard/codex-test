@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Yoghurt Production Line Process Flow Diagram</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --border: #2f2f2f;
+      --process: #8dcf7b;
+      --decision: #f5bdd5;
+      --doc: #ffe285;
+      --support: #cae9ff;
+      --arrow: #2e7ecb;
+      --text: #111111;
+      --font: Arial, "Helvetica Neue", Helvetica, sans-serif;
+    }
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
+      font-family: var(--font);
+      color: var(--text);
+    }
+    .page {
+      width: 1000px;
+      margin: 0 auto;
+      background: #fff;
+    }
+    svg {
+      width: 100%;
+      height: auto;
+      display: block;
+      background: #fff;
+    }
+    .title { font-size: 28px; font-weight: 700; }
+    .subtitle { font-size: 20px; font-weight: 700; }
+    .shape-label { font-size: 14px; font-weight: 700; }
+    .step-text { font-size: 13px; font-weight: 700; }
+    .small-text { font-size: 12px; font-weight: 500; }
+    .tiny-text { font-size: 11px; font-weight: 500; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <svg id="diagram" viewBox="0 0 1000 1650" role="img" aria-label="Yoghurt Production Line Process Flow Diagram"></svg>
+  </div>
+
+  <script>
+    const svg = document.getElementById('diagram');
+    const NS = 'http://www.w3.org/2000/svg';
+
+    // Layout constants for easy reuse in other process diagrams.
+    const LAYOUT = {
+      flowX: 500,
+      stepW: 270,
+      stepH: 44,
+      topY: 210,
+      gap: 56,
+      roleX: 700,
+      supportX: 90,
+      supportY: 365,
+      docsX: 805,
+      docsY: 355,
+      docGap: 62
+    };
+
+    const steps = [
+      'Raw Milk Reception','Raw Milk Quality Inspection','Raw Milk Storage','Milk Standardisation','Preheating',
+      'Homogenisation','Pasteurisation','Cooling to Fermentation Temperature','Culture Dosing',
+      'Transfer to Fermentation Tanks','Fermentation Process','Target pH Reached?','Cooling of Fermented Yoghurt',
+      'Fruit / Flavour Addition','Yoghurt Buffer Tank','Filling and Packaging','Metal Detection and Checkweighing',
+      'Cold Storage','Dispatch Preparation','End of Production Batch'
+    ];
+
+    const roles = {
+      0:'Reception Operator',1:'QC Laboratory',3:'Process Operator',6:'Process Engineer',7:'Utility Operator',
+      8:'QC Technician',11:'QC In-Charge',15:'Packaging Operator',16:'Quality Operator',17:'Warehouse Operator',
+      18:'Logistics Operator',19:'Production Team'
+    };
+
+    const docs = [
+      'Raw Milk Quality Report','Pasteurisation Record','Culture Addition Log','Batch Mixing Record',
+      'Production Batch Report','CIP Verification Log','Packaging Quality Report','Daily Production Summary'
+    ];
+
+    function add(type, attrs, parent = svg) {
+      const el = document.createElementNS(NS, type);
+      Object.entries(attrs || {}).forEach(([k, v]) => el.setAttribute(k, v));
+      parent.appendChild(el);
+      return el;
+    }
+
+    function addText(x, y, text, cls = 'step-text', anchor = 'middle', parent = svg) {
+      const t = add('text', { x, y, 'text-anchor': anchor, class: cls, fill: '#111', 'dominant-baseline': 'middle' }, parent);
+      t.textContent = text;
+      return t;
+    }
+
+    function addWrappedText(x, y, lines, cls, parent) {
+      lines.forEach((line, i) => addText(x, y + (i * 14), line, cls, 'middle', parent));
+    }
+
+    function processBox(x, y, label) {
+      const g = add('g', { class: 'process-step' });
+      add('rect', { x: x - LAYOUT.stepW / 2, y, width: LAYOUT.stepW, height: LAYOUT.stepH, rx: 12, ry: 12, fill: '#8dcf7b', stroke: '#2f2f2f', 'stroke-width': 1.2 }, g);
+      addWrappedText(x, y + 22, wrap(label, 30), 'step-text', g);
+      return g;
+    }
+
+    function decisionDiamond(x, y, label) {
+      const g = add('g', { class: 'decision-step' });
+      const w = 210, h = 80;
+      const p = `${x},${y - h/2} ${x + w/2},${y} ${x},${y + h/2} ${x - w/2},${y}`;
+      add('polygon', { points: p, fill: '#f5bdd5', stroke: '#2f2f2f', 'stroke-width': 1.2 }, g);
+      addWrappedText(x, y - 7, wrap(label, 18), 'step-text', g);
+      return g;
+    }
+
+    function docSymbol(x, y, label) {
+      const g = add('g', { class: 'doc-symbol' });
+      const w = 170, h = 44;
+      const path = `M ${x-w/2} ${y-h/2} L ${x+w/2} ${y-h/2} L ${x+w/2} ${y+10} Q ${x} ${y+h/2+8} ${x-w/2} ${y+10} Z`;
+      add('path', { d: path, fill: '#ffe285', stroke: '#2f2f2f', 'stroke-width': 1.2 }, g);
+      addWrappedText(x, y, wrap(label, 22), 'tiny-text', g);
+      return g;
+    }
+
+    function supportBox(x, y) {
+      const g = add('g', { class: 'support-systems' });
+      add('rect', { x, y, width: 260, height: 290, rx: 14, ry: 14, fill: '#cae9ff', stroke: '#2f2f2f', 'stroke-width': 1.2 }, g);
+      addText(x + 130, y + 20, 'Supporting Systems', 'shape-label', 'middle', g);
+      const items = [
+        '• CIP System','• Hot Water System','• Chilled Water System','• Steam System','• Compressed Air System',
+        '• Automation / PLC System','• Laboratory Management','• Preventive Maintenance','• Utility Monitoring',
+        '• Document Control','• Recipe Management System'
+      ];
+      items.forEach((item, i) => addText(x + 14, y + 45 + i * 21, item, 'tiny-text', 'start', g));
+    }
+
+    function personIcon(x, y, label) {
+      const g = add('g', { class: 'role' });
+      add('circle', { cx: x, cy: y-10, r: 6, fill: '#111' }, g);
+      add('line', { x1: x, y1: y-4, x2: x, y2: y+12, stroke: '#111', 'stroke-width': 2 }, g);
+      add('line', { x1: x-8, y1: y+3, x2: x+8, y2: y+3, stroke: '#111', 'stroke-width': 2 }, g);
+      add('line', { x1: x, y1: y+12, x2: x-6, y2: y+24, stroke: '#111', 'stroke-width': 2 }, g);
+      add('line', { x1: x, y1: y+12, x2: x+6, y2: y+24, stroke: '#111', 'stroke-width': 2 }, g);
+      addText(x + 18, y + 8, label, 'tiny-text', 'start', g);
+    }
+
+    function arrow(x1, y1, x2, y2, label = '') {
+      add('line', { x1, y1, x2, y2, stroke: '#2e7ecb', 'stroke-width': 2.2, 'marker-end': 'url(#arrow)' });
+      if (label) addText((x1+x2)/2 + 4, (y1+y2)/2 - 12, label, 'tiny-text', 'start');
+    }
+
+    function wrap(text, maxLen) {
+      const words = text.split(' ');
+      const lines = [];
+      let line = '';
+      words.forEach(w => {
+        const next = line ? `${line} ${w}` : w;
+        if (next.length > maxLen) { lines.push(line); line = w; }
+        else line = next;
+      });
+      if (line) lines.push(line);
+      return lines.slice(0, 2);
+    }
+
+    function init() {
+      // Arrow marker
+      const defs = add('defs', {});
+      const m = add('marker', { id: 'arrow', viewBox: '0 0 10 10', refX: '8', refY: '5', markerWidth: '7', markerHeight: '7', orient: 'auto-start-reverse' }, defs);
+      add('path', { d: 'M 0 0 L 10 5 L 0 10 z', fill: '#2e7ecb' }, m);
+
+      // Title and legend
+      addText(50, 55, 'YOGHURT PRODUCTION LINE', 'title', 'start');
+      addText(50, 90, 'PROCESS FLOW DIAGRAM', 'subtitle', 'start');
+
+      addText(50, 130, 'Legend', 'shape-label', 'start');
+      add('rect', { x: 50, y: 145, width: 20, height: 14, rx: 4, fill: '#8dcf7b', stroke: '#2f2f2f', 'stroke-width': 1 });
+      addText(78, 152, 'Process', 'tiny-text', 'start');
+      add('polygon', { points: '60,180 70,190 60,200 50,190', fill: '#f5bdd5', stroke: '#2f2f2f', 'stroke-width': 1 });
+      addText(78, 190, 'Decision', 'tiny-text', 'start');
+      docSymbol(60, 226, 'Record');
+      addText(110, 226, 'Report / Log', 'tiny-text', 'start');
+
+      supportBox(LAYOUT.supportX, LAYOUT.supportY);
+
+      // Main process creation
+      const yOf = i => LAYOUT.topY + i * LAYOUT.gap;
+      steps.forEach((s, i) => {
+        if (i === 11) decisionDiamond(LAYOUT.flowX, yOf(i)+22, s);
+        else processBox(LAYOUT.flowX, yOf(i), `${i+1}. ${s}`);
+
+        if (roles[i]) personIcon(LAYOUT.roleX, yOf(i)+16, roles[i]);
+
+        if (i < steps.length - 1 && i !== 11) arrow(LAYOUT.flowX, yOf(i) + LAYOUT.stepH, LAYOUT.flowX, yOf(i+1));
+      });
+
+      // Decision connectors: YES down, NO loop-back
+      const dcy = yOf(11)+22;
+      arrow(LAYOUT.flowX, dcy + 40, LAYOUT.flowX, yOf(12), 'YES');
+      add('path', { d: `M ${LAYOUT.flowX-105} ${dcy} L ${LAYOUT.flowX-180} ${dcy} L ${LAYOUT.flowX-180} ${yOf(10)+22} L ${LAYOUT.flowX-6} ${yOf(10)+22}`, fill: 'none', stroke: '#2e7ecb', 'stroke-width': 2.2, 'marker-end': 'url(#arrow)' });
+      addText(LAYOUT.flowX-220, (dcy + yOf(10)+22)/2, 'NO - Continue Fermentation', 'tiny-text', 'start');
+
+      // Reports/logs column and connectors
+      docs.forEach((d, i) => docSymbol(LAYOUT.docsX, LAYOUT.docsY + i * LAYOUT.docGap, d));
+      const map = [[1,0],[6,1],[8,2],[13,3],[19,4],[4,5],[16,6],[18,7]];
+      map.forEach(([stepIdx, docIdx]) => {
+        arrow(LAYOUT.flowX + LAYOUT.stepW/2, yOf(stepIdx)+22, LAYOUT.docsX-85, LAYOUT.docsY + docIdx * LAYOUT.docGap);
+      });
+
+      // Technical and utility notes
+      addText(90, 700, 'Milk Process Path:', 'shape-label', 'start');
+      addText(90, 722, 'Raw Milk Tank → Balance Tank → Plate Heat Exchanger →', 'tiny-text', 'start');
+      addText(90, 740, 'Homogeniser → Pasteuriser → Fermentation Tank →', 'tiny-text', 'start');
+      addText(90, 758, 'Cooling Section → Filling Machine', 'tiny-text', 'start');
+
+      addText(90, 790, 'Utility Notes:', 'shape-label', 'start');
+      addText(90, 812, 'Steam → Pasteuriser', 'tiny-text', 'start');
+      addText(90, 830, 'Ice Water → Cooling Section', 'tiny-text', 'start');
+      addText(90, 848, 'CIP Supply / Return → All Tanks and Lines', 'tiny-text', 'start');
+
+      add('rect', { x: 35, y: 115, width: 930, height: 1490, fill: 'none', stroke: '#2f2f2f', 'stroke-width': 0.8 });
+    }
+
+    // To adapt this file for another process:
+    // 1) Edit `steps`, `roles`, and `docs` arrays.
+    // 2) Adjust `map` to connect steps to records.
+    // 3) Tune LAYOUT constants for spacing.
+    init();
+  </script>
+</body>
+</html>
